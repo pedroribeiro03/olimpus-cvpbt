@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView, TextInput } from 'react-native-gesture-handler'
 import FormField from '../../components/FormField';
 import { Link,router } from 'expo-router';
-import { getCurrentUser, SignIn } from '@/lib/appwrite';
+import { getCurrentUser, getCurrentUserBE, SignIn, isBackend } from '@/lib/appwrite';
 import { Alert } from 'react-native';
 import { useGlobalContext } from '@/context/GlobalProvider';
 
@@ -28,13 +28,19 @@ const signIn = () => {
 
     try {
       await SignIn(form.email, form.password)
+      if(!isBackend){
       const result = await getCurrentUser();
       setUser(result);
       setIsLogged(true);
-
       Alert.alert("Success", "User signed in successfully");
-
       router.replace("/home");
+    }else{
+      const result = await getCurrentUserBE();
+      setUser(result);
+      setIsLogged(true);
+      Alert.alert("Success", "User signed in successfully");
+      router.replace("/home_be");
+    }
     } catch (error) {
       Alert.alert("Error", "Erro");
     } finally {
