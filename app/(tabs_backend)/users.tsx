@@ -1,6 +1,7 @@
-import { View, Text, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { getAllUsers } from '@/lib/appwrite';
+import { useNavigation } from '@react-navigation/native';
 
 const Users = () => {
   type User = {
@@ -8,8 +9,11 @@ const Users = () => {
     nome: string;
     desporto: string;
     posicao: string;
+    altura: string;
+    peso: string;
   };
-  
+
+  const navigation = useNavigation(); // Para navegar entre páginas
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -43,11 +47,19 @@ const Users = () => {
         data={users}
         keyExtractor={(item) => item.$id}
         renderItem={({ item }) => (
-          <View style={styles.userCard}>
+          <TouchableOpacity
+            style={styles.userCard}
+           // onPress={() => navigation.navigate('UserProfile', { user: { nome: 'Teste', desporto: 'Futebol' } })}
+
+            onPress={() => navigation.navigate('UserProfile', { id: item.$id, nome: item.nome, desporto: item.desporto , posicao: item.posicao, peso:item.peso, altura:item.altura})}
+
+
+           // onPress={() => navigation.navigate('UserProfile', { user: item })} // Envia os dados para a outra página
+          >
             <Text style={styles.userName}>{item.nome}</Text>
             <Text style={styles.userInfo}>Desporto: {item.desporto}</Text>
             <Text style={styles.userInfo}>Posição: {item.posicao}</Text>
-          </View>
+          </TouchableOpacity>
         )}
       />
     </View>

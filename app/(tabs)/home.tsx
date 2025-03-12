@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center', // Centraliza o botão
     marginTop: 20, // Adiciona espaçamento acima do botão
   },
-
+//teste apagar
 });
 
 export default Home;
