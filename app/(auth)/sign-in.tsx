@@ -28,19 +28,21 @@ const signIn = () => {
 
     try {
       await SignIn(form.email, form.password)
-      if(!isBackend){
-      const result = await getCurrentUser();
-      setUser(result);
-      setIsLogged(true);
-      Alert.alert("Success", "User signed in successfully");
-      router.replace("/home");
-    }else{
-      const result = await getCurrentUserBE();
-      setUser(result);
-      setIsLogged(true);
-      Alert.alert("Success", "User signed in successfully");
-      router.replace("/home_be");
-    }
+      const result = await isBackend();
+      console.log(result); // Agora imprime true ou false
+      if(!result){ 
+        const result = await getCurrentUser();
+        setUser(result);
+        setIsLogged(true);
+        Alert.alert("Success", "User signed in successfully");
+        router.replace("/home");
+      }else{
+        const result = await getCurrentUserBE(); 
+        setUser(result);
+        setIsLogged(true);
+        Alert.alert("Success", "User signed in successfully");
+        router.replace("/(tabs_backend)/users");
+      }
     } catch (error) {
       Alert.alert("Error", "Erro");
     } finally {

@@ -1,31 +1,33 @@
 import { View, Text, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { getAllUsers } from '@/lib/appwrite';
+import { getAllExercises } from '@/lib/appwrite';
 
-const Users = () => {
-  type User = {
+const Exercises = () => {
+
+  type Exercise = {
     $id: string;
     nome: string;
-    desporto: string;
-    posicao: string;
   };
   
-  const [users, setUsers] = useState<User[]>([]);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchExercises = async () => {
       try {
-        const response = await getAllUsers();
-        setUsers(response.documents); // Supondo que os utilizadores vêm dentro de "documents"
+        const response = await getAllExercises();
+        setExercises(response.documents.map((doc) => ({
+          $id: doc.$id,
+          nome: doc.nome,
+        })));
       } catch (error) {
-        console.error('Erro ao obter utilizadores:', error);
+        console.error('Erro ao obter exercícios:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUsers();
+    fetchExercises();
   }, []);
 
   if (loading) {
@@ -38,15 +40,13 @@ const Users = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Lista de Utilizadores</Text>
+      <Text style={styles.title}>Lista de Exercícios</Text>
       <FlatList
-        data={users}
+        data={exercises}
         keyExtractor={(item) => item.$id}
         renderItem={({ item }) => (
-          <View style={styles.userCard}>
-            <Text style={styles.userName}>{item.nome}</Text>
-            <Text style={styles.userInfo}>Desporto: {item.desporto}</Text>
-            <Text style={styles.userInfo}>Posição: {item.posicao}</Text>
+          <View style={styles.exerciseCard}>
+            <Text style={styles.exerciseName}>{item.nome}</Text>
           </View>
         )}
       />
@@ -73,21 +73,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  userCard: {
+  exerciseCard: {
     backgroundColor: '#2a2a2a',
     padding: 15,
     marginVertical: 8,
     borderRadius: 8,
   },
-  userName: {
+  exerciseName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
   },
-  userInfo: {
-    fontSize: 14,
-    color: '#bbb',
-  },
 });
 
-export default Users;
+export default Exercises;
