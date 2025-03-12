@@ -35,13 +35,13 @@ const signIn = () => {
         setUser(result);
         setIsLogged(true);
         Alert.alert("Success", "User signed in successfully");
-        router.replace("/home");
+        router.push("/home");
       }else{
         const result = await getCurrentUserBE(); 
         setUser(result);
         setIsLogged(true);
         Alert.alert("Success", "User signed in successfully");
-        router.replace("/(tabs_backend)/users");
+        router.push("/(tabs_backend)/users");
       }
     } catch (error) {
       Alert.alert("Error", "Erro");

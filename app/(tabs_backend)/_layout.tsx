@@ -1,23 +1,13 @@
-import { View, Text } from 'react-native'
-import React from 'react'
-import { Tabs, Redirect } from 'expo-router'
+import { Tabs } from "expo-router";
 
-const TabsLayout = () => {
+export default function Layout() {
   return (
-    <>
     <Tabs>
-    <Tabs.Screen
-        name = 'home_be'
-      />
-      <Tabs.Screen
-        name = 'users'
-      />
-      <Tabs.Screen
-        name = 'perfil'
-      />
-    </Tabs>
-    </>
-  )
+  
+      {/* Definindo as telas dentro da pilha */}
+      <Tabs.Screen name="users" options={{ title: "Utilizadores" }} />
+      <Tabs.Screen name="profile" options={{ title: "Perfil" }} />
+      <Tabs.Screen name="exercises" options={{ title: "Exercícios" }} />    
+      </Tabs>
+  );
 }
-
-export default TabsLayout
