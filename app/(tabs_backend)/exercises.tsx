@@ -1,8 +1,11 @@
 import { View, Text, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { getAllExercises } from '@/lib/appwrite';
-
+import { TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 const Exercises = () => {
+    const router = useRouter();
+  
 
   type Exercise = {
     $id: string;
@@ -40,6 +43,12 @@ const Exercises = () => {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.createButton} onPress={() => {
+          // Redireciona para a página do plano do dia com o dia selecionado na URL
+          router.replace(`/(tabs_backend)/_backend_ginasio/create_exercise`);
+        }}>
+        <Text style={styles.createButtonText}>Criar Exercício</Text>
+      </TouchableOpacity>
       <Text style={styles.title}>Lista de Exercícios</Text>
       <FlatList
         data={exercises}
@@ -80,6 +89,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   exerciseName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  createButton: {
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  createButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
