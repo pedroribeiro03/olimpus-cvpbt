@@ -211,9 +211,7 @@ const styles = StyleSheet.create({
   },
 
 
- 
-
-  buttonContainer: {
+   buttonContainer: {
     flexDirection: 'row',
     gap: 15, // Adiciona espaço entre os botões
   },
