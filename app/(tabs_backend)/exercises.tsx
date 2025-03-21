@@ -1,37 +1,69 @@
-import { View, Text, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { getAllExercises } from '@/lib/appwrite';
-import { TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-const Exercises = () => {
-    const router = useRouter();
-  
+import { getAllExercises } from '@/lib/appwrite';
 
-  type Exercise = {
-    $id: string;
-    nome: string;
+// Define o tipo Exercise
+type Exercise = {
+  $id: string;
+  nome: string;
+};
+
+const Exercises = () => {
+  const router = useRouter();
+  const [exercises, setExercises] = useState<Exercise[]>([]); // Aplica o tipo Exercise[]
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1); // Página atual
+  const limit = 25; // Número de exercícios por página
+
+  // Função para carregar os exercícios
+  const fetchExercises = async () => {
+    try {
+      setLoading(true);
+      const offset = (page - 1) * limit;
+      const response = await getAllExercises(limit, offset);
+  
+      // Mapeia os documentos para garantir que possuem os campos esperados
+      const formattedExercises: Exercise[] = response.documents.map((doc) => ({
+        $id: doc.$id,
+        nome: doc.nome || '', // Garante que nome é uma string
+      }));
+  
+      setExercises(formattedExercises); // Atualiza o estado corretamente
+    } catch (error) {
+      console.error('Erro ao obter exercícios:', error);
+    } finally {
+      setLoading(false);
+    }
   };
   
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [loading, setLoading] = useState(true);
-
+  
+  
+  // Sempre que mudar de página, recarrega os exercícios
   useEffect(() => {
-    const fetchExercises = async () => {
-      try {
-        const response = await getAllExercises();
-        setExercises(response.documents.map((doc) => ({
-          $id: doc.$id,
-          nome: doc.nome,
-        })));
-      } catch (error) {
-        console.error('Erro ao obter exercícios:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchExercises();
-  }, []);
+  }, [page]);
+  
+
+  // Carrega os exercícios ao montar o componente ou quando a página muda
+  useEffect(() => {
+    fetchExercises();
+  }, [page]);
+
+  // Função para ir para a próxima página
+  const handleNextPage = () => {
+    setPage((prevPage) => prevPage + 1);
+  };
+
+  // Função para voltar à página anterior
+  const handlePrevPage = () => {
+    setPage((prevPage) => Math.max(prevPage - 1, 1));
+  };
+
+  // Função para navegar para a tela de criação de exercício
+  const navigateToCreateExercise = () => {
+    router.push('/_backend_ginasio/create_exercise');
+  };
 
   if (loading) {
     return (
@@ -43,22 +75,48 @@ const Exercises = () => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.createButton} onPress={() => {
-          // Redireciona para a página do plano do dia com o dia selecionado na URL
-          router.replace(`/(tabs_backend)/_backend_ginasio/create_exercise`);
-        }}>
+      <Text style={styles.title}>Lista de Exercícios (Página {page})</Text>
+
+      {/* Botão de Criar Exercício */}
+      <TouchableOpacity
+        style={styles.createButton}
+        onPress={navigateToCreateExercise}
+      >
         <Text style={styles.createButtonText}>Criar Exercício</Text>
       </TouchableOpacity>
-      <Text style={styles.title}>Lista de Exercícios</Text>
+
+      {/* Lista de Exercícios */}
       <FlatList
         data={exercises}
         keyExtractor={(item) => item.$id}
         renderItem={({ item }) => (
-          <View style={styles.exerciseCard}>
-            <Text style={styles.exerciseName}>{item.nome}</Text>
-          </View>
-        )}
-      />
+        <TouchableOpacity
+          style={styles.exerciseCard}
+          onPress={() => router.push(`/_backend_ginasio/exercise_details/${item.$id}`)}
+        >
+          <Text style={styles.exerciseName}>{item.nome}</Text>
+        </TouchableOpacity>
+  )}
+/>
+
+
+      {/* Botões de paginação */}
+      <View style={styles.paginationContainer}>
+        <TouchableOpacity
+          style={styles.paginationButton}
+          onPress={handlePrevPage}
+          disabled={page === 1} // Desabilita o botão na primeira página
+        >
+          <Text style={styles.paginationButtonText}>Anterior</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.paginationButton}
+          onPress={handleNextPage}
+        >
+          <Text style={styles.paginationButtonText}>Próximo</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -93,12 +151,30 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  paginationButton: {
+    backgroundColor: '#4CAF50',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  paginationButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
   createButton: {
     backgroundColor: '#4CAF50',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 20,
+    marginBottom: 20,
   },
   createButtonText: {
     fontSize: 18,

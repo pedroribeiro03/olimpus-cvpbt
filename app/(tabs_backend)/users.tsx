@@ -2,6 +2,7 @@ import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity }
 import React, { useEffect, useState } from 'react';
 import { getAllUsers } from '@/lib/appwrite';
 import { useNavigation } from '@react-navigation/native';
+import { router } from 'expo-router';
 
 const Users = () => {
   type User = {
@@ -51,8 +52,17 @@ const Users = () => {
             style={styles.userCard}
            // onPress={() => navigation.navigate('UserProfile', { user: { nome: 'Teste', desporto: 'Futebol' } })}
 
-            onPress={() => navigation.navigate('UserProfile', { id: item.$id, nome: item.nome, desporto: item.desporto , posicao: item.posicao, peso:item.peso, altura:item.altura})}
-
+           onPress={() => router.push({
+            pathname: '/_backend_ginasio/UserProfile', // Substitua pelo caminho da rota desejada
+            params: { 
+              id: item.$id, 
+              nome: item.nome, 
+              desporto: item.desporto, 
+              posicao: item.posicao, 
+              peso: item.peso, 
+              altura: item.altura 
+            }
+          })}
 
            // onPress={() => navigation.navigate('UserProfile', { user: item })} // Envia os dados para a outra página
           >
