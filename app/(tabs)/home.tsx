@@ -6,87 +6,116 @@ import { useGlobalContext } from '@/context/GlobalProvider';
 import { router } from 'expo-router';
 
 const Home = () => {
-  const{user} = useGlobalContext();
+  const { user } = useGlobalContext();
 
   const goToPlano = () => {
     router.push('../ginasio/plano_semanal');
   };
 
-  if(user){
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-      {/* Logo no topo */}
-      <View style={styles.header}>
-        <Image source={require('../../assets/images/Logo_sf.png')} style={styles.logo} />
-      </View>
+  const goToTestes = () => {
+    router.push('../ginasio/home_testesiniciais');
+  };
 
-      {/* Conteúdo principal */}
-      <View style={styles.content}>
-        <Text style={styles.welcomeText}>Bem-vindo</Text>
-        <Text style={styles.nameText}>{user.username || 'Não disponível'}</Text>
-        <TouchableOpacity
-            style={styles.planoButton}
-            onPress={goToPlano}
-          >
-            <Text style={{ color: 'white', textAlign: 'center', fontSize: 16 }}>
-              Consultar plano semanal
-            </Text>
-        </TouchableOpacity>
-      </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+  if (user) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView>
+          {/* Cabeçalho com logo */}
+          <View style={styles.header}>
+            <View style={styles.headerRow}>
+              <Image source={require('../../assets/images/Logo_sf.png')} style={styles.logo} />
+            </View>
+          </View>
+
+          {/* Conteúdo principal */}
+          <View style={styles.content}>
+            <Text style={styles.welcomeText}>Bem-vindo</Text>
+            <Text style={styles.nameText}>{user.username || 'Não disponível'}</Text>
+            
+            {/* Botão Consultar Plano Semanal */}
+            <TouchableOpacity
+              style={styles.planoButton}
+              onPress={goToPlano}
+            >
+              <Text style={styles.buttonText}>
+                Consultar plano semanal
+              </Text>
+            </TouchableOpacity>
+
+            {/* Botão Atualizar Testes */}
+            <TouchableOpacity
+              style={[styles.planoButton, styles.testesButton]}
+              onPress={goToTestes}
+            >
+              <Text style={styles.buttonText}>
+                Atualizar Testes
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 };
-}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000', // Fundo preto
+    backgroundColor: '#000',
   },
   header: {
-    alignItems: 'center',
     padding: 16,
-    backgroundColor: '#111', // Fundo ligeiramente mais claro no cabeçalho
+    backgroundColor: '#111',
     borderBottomWidth: 1,
-    borderBottomColor: '#444', // Linha de separação discreta
+    borderBottomColor: '#444',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   logo: {
     width: 150,
     height: 50,
-    resizeMode: 'contain', // Ajusta sem distorcer
+    resizeMode: 'contain',
   },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   nameText: {
     marginLeft: 20,
-    alignSelf:'flex-start',
-    color: '#FFF', // Texto branco
+    alignSelf: 'flex-start',
+    color: '#FFF',
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 8,
   },
   welcomeText: {
     marginLeft: 20,
-    alignSelf:'flex-start',
-    color: '#CCC', // Texto branco acinzentado
+    alignSelf: 'flex-start',
+    color: '#CCC',
     fontSize: 18,
+    marginBottom: 30,
   },
-
   planoButton: {
-    backgroundColor: '#4CAF50', // Cor de fundo para o botão
-    padding: 10,
-    borderRadius: 5,
-    width: '80%', // 80% da largura da tela
-    height: 40, // Altura fixa de 40px
-    alignSelf: 'center', // Centraliza o botão
-    marginTop: 20, // Adiciona espaçamento acima do botão
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 8,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 15, // Espaçamento entre os botões
   },
-//teste apagar
+  testesButton: {
+    backgroundColor: '#2196F3', // Azul para diferenciar
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
 
 export default Home;
