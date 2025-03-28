@@ -42,12 +42,12 @@ const TestesIniciais = () => {
     }, [tipoTeste, page]);
   
     const navigateToCreate = () => {
-      router.push('/(tabs_backend)/testesiniciais/create');
+      router.push('/_backend_teste_inicial/create_testeinicial');
     };
   
     const navigateToDetails = (id: string) => {
       router.push({
-        pathname: '/(tabs_backend)/testesiniciais/[id]',
+        pathname: '/_backend_teste_inicial/testesinicial_details/[id]',
         params: { id }
       });
     };

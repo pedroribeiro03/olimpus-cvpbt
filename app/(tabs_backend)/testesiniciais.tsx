@@ -50,7 +50,7 @@ const TestesIniciais = () => {
   };
   const handleDetails = (id: string) => {
     router.push({
-      pathname: '/teste_inicial_details/[id]',
+      pathname: '/_backend_teste_inicial/teste_inicial_details/[id]',
       params: { id }
     });
   };
