@@ -1,32 +1,27 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import DropDownPicker from 'react-native-dropdown-picker';
+import { useState, useEffect } from 'react';
 import { createTreinoTecnico, getAllTreinos } from '@/lib/appwrite';
 
-const CreateTreinoTecnico = () => {
+export default function CreateTreinoTecnico() {
   const router = useRouter();
-  const [nome, setNome] = useState('');
-  const [sequencia, setSequencia] = useState('');
-  const [video, setVideo] = useState('');
-  const [treinoRelacionado, setTreinoRelacionado] = useState(null);
-  const [treinos, setTreinos] = useState<{label: string, value: string}[]>([]);
-  const [openTreino, setOpenTreino] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    nome: '',
+    video: '',
+    sequencia: '',
+    treino_id: null
+  });
+  const [treinos, setTreinos] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchTreinos = async () => {
       try {
-        setLoading(true);
-        const treinosRes = await getAllTreinos();
-        
-        setTreinos(treinosRes.documents.map(t => ({ 
-          label: t.nome || 'Treino sem nome', 
-          value: t.$id 
-        })));
+        const response = await getAllTreinos();
+        setTreinos(response.documents);
       } catch (error) {
-        Alert.alert('Erro', 'Falha ao carregar treinos');
+        Alert.alert('Erro', 'Falha ao carregar treinos disponíveis');
         console.error(error);
       } finally {
         setLoading(false);
@@ -37,28 +32,47 @@ const CreateTreinoTecnico = () => {
   }, []);
 
   const handleSubmit = async () => {
-    if (!nome.trim() || !sequencia.trim() || !video.trim()) {
-        Alert.alert('Erro', 'Nome, sequência e vídeo são obrigatórios');
-        return;
+    if (!form.nome || !form.video || !form.sequencia) {
+      Alert.alert('Erro', 'Preencha todos os campos obrigatórios');
+      return;
     }
 
+    setSubmitting(true);
     try {
-        setSubmitting(true);
-        await createTreinoTecnico({
-          nome,
-          sequencia,
-          video,
-          treino_id: [treinoRelacionado], // Coloca treino_id dentro de um array
-        });
-        Alert.alert('Sucesso', 'Treino técnico criado com sucesso!');
-        router.replace('/(tabs_backend)/treinos_tecnicos');
+      // Garante que treino_id seja enviado como string ou null
+      const treinoId = form.treino_id ? form.treino_id.$id : null;
+      
+      console.log("Dados sendo enviados:", {
+        nome: form.nome,
+        video: form.video,
+        sequencia: form.sequencia,
+        treino_id: treinoId
+      });
+
+      await createTreinoTecnico({
+        nome: form.nome,
+        video: form.video,
+        sequencia: form.sequencia,
+        treino_id: treinoId
+      });
+
+      Alert.alert('Sucesso', 'Treino técnico criado com sucesso!');
+      router.replace('/(tabs_backend)/treinos_tecnicos');
     } catch (error) {
-        Alert.alert('Erro', error.message || 'Falha ao criar treino técnico');
-        console.error(error);
+      console.error("Erro detalhado:", error);
+      Alert.alert('Erro', error.message || 'Falha ao criar treino técnico');
     } finally {
-        setSubmitting(false);
+      setSubmitting(false);
     }
-};
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -67,67 +81,74 @@ const CreateTreinoTecnico = () => {
       <Text style={styles.label}>Nome*</Text>
       <TextInput
         style={styles.input}
-        value={nome}
-        onChangeText={setNome}
+        value={form.nome}
+        onChangeText={(text) => setForm({...form, nome: text})}
         placeholder="Nome do treino técnico"
-        placeholderTextColor="#aaa"
-      />
-
-      <Text style={styles.label}>Sequência*</Text>
-      <TextInput
-        style={styles.input}
-        value={sequencia}
-        onChangeText={setSequencia}
-        placeholder="Ex: 3x10 reps, 5 séries de 30s"
         placeholderTextColor="#aaa"
       />
 
       <Text style={styles.label}>URL do Vídeo*</Text>
       <TextInput
         style={styles.input}
-        value={video}
-        onChangeText={setVideo}
+        value={form.video}
+        onChangeText={(text) => setForm({...form, video: text})}
         placeholder="https://exemplo.com/video"
         placeholderTextColor="#aaa"
         keyboardType="url"
       />
 
-<Text style={styles.label}>Treino Relacionado (Opcional)</Text>
-<DropDownPicker
-  open={openTreino}
-  value={treinoRelacionado || ""} // Garante que nunca é null
-  items={treinos}
-  setOpen={setOpenTreino}
-  setValue={(callback) => {
-    const selectedValue = callback(treinoRelacionado);
-    console.log("Treino selecionado:", selectedValue); // Debug para verificar se está a funcionar
-    setTreinoRelacionado(selectedValue);
-  }}
-  placeholder="Selecione um treino relacionado"
-  style={styles.dropdown}
-  dropDownContainerStyle={styles.dropdownContainer}
-  zIndex={2000}
-/>
+      <Text style={styles.label}>Sequência*</Text>
+      <TextInput
+        style={[styles.input, { height: 120 }]}
+        value={form.sequencia}
+        onChangeText={(text) => setForm({...form, sequencia: text})}
+        placeholder="Descreva a sequência completa do treino"
+        placeholderTextColor="#aaa"
+        multiline
+      />
 
+      <Text style={styles.label}>Treino Relacionado (Opcional)</Text>
+      <View style={styles.dropdownContainer}>
+        {treinos.map(treino => (
+          <TouchableOpacity
+            key={treino.$id}
+            style={[
+              styles.dropdownItem,
+              form.treino_id?.$id === treino.$id && styles.selectedItem
+            ]}
+            onPress={() => setForm({...form, treino_id: treino})}
+          >
+            <Text style={styles.dropdownItemText}>{treino.nome}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       <TouchableOpacity
         style={[styles.button, submitting && styles.disabledButton]}
         onPress={handleSubmit}
         disabled={submitting}
       >
-        <Text style={styles.buttonText}>
-          {submitting ? 'Salvando...' : 'Salvar Treino Técnico'}
-        </Text>
+        {submitting ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Criar Treino Técnico</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
     padding: 20,
+    backgroundColor: '#1a1a1a',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
   },
   title: {
     fontSize: 22,
@@ -137,7 +158,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   label: {
-    color: '#fff',
+    color: '#4CAF50',
     marginBottom: 8,
     fontSize: 16,
   },
@@ -150,15 +171,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#444',
   },
-  dropdown: {
-    backgroundColor: '#2a2a2a',
-    borderColor: '#444',
-    borderRadius: 8,
+  dropdownContainer: {
     marginBottom: 15,
   },
-  dropdownContainer: {
+  dropdownItem: {
+    padding: 12,
     backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    marginBottom: 5,
+    borderWidth: 1,
     borderColor: '#444',
+  },
+  selectedItem: {
+    backgroundColor: '#4CAF50',
+  },
+  dropdownItemText: {
+    color: '#fff',
   },
   button: {
     backgroundColor: '#4CAF50',
@@ -175,16 +203,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-  },
-  loadingText: {
-    color: '#fff',
-    marginTop: 10,
-  },
 });
-
-export default CreateTreinoTecnico;

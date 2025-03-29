@@ -1,42 +1,66 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { getTreinoTecnicoById, deleteTreinoTecnico } from '@/lib/appwrite';
+import { useState, useEffect } from 'react';
+import { getTreinoTecnicoById, updateTreinoTecnico, getAllTreinos } from '@/lib/appwrite';
 
-export default function TreinoTecnicoDetails() {
+export default function EditTreinoTecnico() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const [treino, setTreino] = useState(null);
+  const [nome, setNome] = useState('');
+  const [video, setVideo] = useState('');
+  const [sequencia, setSequencia] = useState('');
+  const [treinoId, setTreinoId] = useState('');
+  const [treinos, setTreinos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [deleting, setDeleting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
-        const data = await getTreinoTecnicoById(id);
-        setTreino(data);
+        const [treinoData, treinosData] = await Promise.all([
+          getTreinoTecnicoById(id),
+          getAllTreinos()
+        ]);
+
+        setTreino(treinoData);
+        setNome(treinoData.nome);
+        setVideo(treinoData.video);
+        setSequencia(treinoData.sequencia);
+        setTreinoId(treinoData.treino_id || '');
+        setTreinos(treinosData.documents);
       } catch (error) {
-        console.error("Failed to load technical training:", error);
-        Alert.alert("Error", "Failed to load technical training details");
+        Alert.alert('Erro', 'Falha ao carregar dados do treino');
+        console.error(error);
         router.back();
       } finally {
         setLoading(false);
       }
     };
-  
+
     fetchData();
   }, [id]);
-  const handleDelete = async () => {
+
+  const handleSubmit = async () => {
+    if (!nome || !video || !sequencia) {
+      Alert.alert('Erro', 'Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      setDeleting(true);
-      await deleteTreinoTecnico(id);
-      Alert.alert('Sucesso', 'Treino excluído com sucesso');
+      await updateTreinoTecnico(id, {
+        nome,
+        video,
+        sequencia,
+        treino_id: treinoId || null
+      });
+      Alert.alert('Sucesso', 'Treino técnico atualizado com sucesso');
       router.replace('/(tabs_backend)/treinos_tecnicos');
     } catch (error) {
-      Alert.alert('Erro', error.message);
+      Alert.alert('Erro', error.message || 'Falha ao atualizar treino técnico');
     } finally {
-      setDeleting(false);
+      setSubmitting(false);
     }
   };
 
@@ -50,27 +74,62 @@ export default function TreinoTecnicoDetails() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{treino.nome}</Text>
-      
-      <Text style={styles.label}>Sequência:</Text>
-      <Text style={styles.text}>{treino.sequencia}</Text>
-      
-      {treino.video && (
-        <>
-          <Text style={styles.label}>Vídeo:</Text>
-          <Text style={styles.text}>{treino.video}</Text>
-        </>
-      )}
+      <Text style={styles.title}>Editar Treino Técnico</Text>
+
+      <Text style={styles.label}>Nome*</Text>
+      <TextInput
+        style={styles.input}
+        value={nome}
+        onChangeText={setNome}
+        placeholder="Nome do treino técnico"
+        placeholderTextColor="#aaa"
+      />
+
+      <Text style={styles.label}>URL do Vídeo*</Text>
+      <TextInput
+        style={styles.input}
+        value={video}
+        onChangeText={setVideo}
+        placeholder="https://exemplo.com/video"
+        placeholderTextColor="#aaa"
+        keyboardType="url"
+      />
+
+      <Text style={styles.label}>Sequência*</Text>
+      <TextInput
+        style={[styles.input, { height: 100 }]}
+        value={sequencia}
+        onChangeText={setSequencia}
+        placeholder="Descreva a sequência do treino"
+        placeholderTextColor="#aaa"
+        multiline
+      />
+
+      <Text style={styles.label}>Treino Relacionado (Opcional)</Text>
+      <View style={styles.dropdownContainer}>
+        {treinos.map(t => (
+          <TouchableOpacity
+            key={t.$id}
+            style={[
+              styles.dropdownItem,
+              treinoId === t.$id && styles.selectedItem
+            ]}
+            onPress={() => setTreinoId(t.$id)}
+          >
+            <Text style={styles.dropdownItemText}>{t.nome}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       <TouchableOpacity
-        style={[styles.button, styles.deleteButton]}
-        onPress={handleDelete}
-        disabled={deleting}
+        style={[styles.button, submitting && styles.disabledButton]}
+        onPress={handleSubmit}
+        disabled={submitting}
       >
-        {deleting ? (
+        {submitting ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Excluir Treino</Text>
+          <Text style={styles.buttonText}>Salvar Alterações</Text>
         )}
       </TouchableOpacity>
     </View>
@@ -98,24 +157,48 @@ const styles = StyleSheet.create({
   },
   label: {
     color: '#4CAF50',
-    marginTop: 15,
-    fontWeight: 'bold',
+    marginBottom: 8,
+    fontSize: 16,
   },
-  text: {
+  input: {
+    backgroundColor: '#2a2a2a',
     color: '#fff',
-    marginTop: 5,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#444',
+  },
+  dropdownContainer: {
+    marginBottom: 15,
+  },
+  dropdownItem: {
+    padding: 12,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    marginBottom: 5,
+    borderWidth: 1,
+    borderColor: '#444',
+  },
+  selectedItem: {
+    backgroundColor: '#4CAF50',
+  },
+  dropdownItemText: {
+    color: '#fff',
   },
   button: {
+    backgroundColor: '#4CAF50',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 20,
   },
-  deleteButton: {
-    backgroundColor: '#F44336',
+  disabledButton: {
+    backgroundColor: '#2a5c2a',
   },
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
+    fontSize: 16,
   },
 });
