@@ -80,11 +80,11 @@ const TreinosTecnicos = () => {
         keyExtractor={item => item.$id}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.treinoCard}
+            style={styles.testCard}  // Alterado para testCard
             onPress={() => handleDetails(item.$id)}
           >
-            <Text style={styles.treinoName}>{item.nome}</Text>
-            <Text style={styles.treinoDetail}>Sequência: {item.sequencia.substring(0, 50)}...</Text>
+            <Text style={styles.testName}>{item.nome}</Text>  {/* Alterado para testName */}
+            <Text style={styles.testType}>Sequência: {item.sequencia.substring(0, 50)}...</Text>  {/* Alterado para testType */}
           </TouchableOpacity>
         )}
       />
@@ -107,7 +107,6 @@ const TreinosTecnicos = () => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -213,3 +212,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+export default TreinosTecnicos;
