@@ -1,7 +1,7 @@
 import { View, Text, ActivityIndicator, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { config, getTesteById, getAccount, signOut, deleteTesteInicial } from '@/lib/appwrite';
+import { config, getTesteById, getAccount, signOut, deleteTesteInicial, Client } from '@/lib/appwrite';
 
 export default function TesteInicialDetails() {
   const { id } = useLocalSearchParams();
@@ -51,20 +51,28 @@ export default function TesteInicialDetails() {
 
   
   const handleDelete = async () => {
-    console.log('ID do teste antes da exclusão:', id); // Verifica se o ID está correto
     try {
-      const user = await client.account.get();  // Função do Appwrite para obter o utilizador autenticado
-      if (!user) {
-        console.log("Nenhum utilizador autenticado!");
-        return;  // Não permite a exclusão se não houver utilizador autenticado
+      console.log('ID do teste a ser deletado:', id);
+  
+      // Verifica se o usuário está autenticado
+      const currentAccount = await getAccount();
+      if (!currentAccount) {
+        Alert.alert('Erro', 'Faça login novamente.');
+        await signOut();
+        router.replace('/(auth)/sign-in');
+        return;
       }
-      console.log("Utilizador atual:", user);
-        await deleteTesteInicial(id);
-        console.log('Teste eliminado com sucesso!');
+  
+      // Chama a função de deleção (já verifica permissões internamente)
+      await deleteTesteInicial(id);
+      
+      Alert.alert('Sucesso', 'Teste deletado!');
+      router.back(); // Volta para a tela anterior
     } catch (error) {
-        console.error('Erro ao excluir:', error);
+      console.error('Erro ao excluir:', error);
+      Alert.alert('Erro', error.message || 'Falha ao deletar teste');
     }
-};  
+  };  
   // Renderização condicional
   if (loading) {
     return (
