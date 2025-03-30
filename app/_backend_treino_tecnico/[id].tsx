@@ -49,7 +49,7 @@ const TreinoTecnicoDetails = () => {
           {
             text: 'Cancelar',
             style: 'cancel',
-            onPress: () => console.log('Cancelado pelo usuário')
+            onPress: () => console.log('Cancelado pelo utlizador')
           },
           { 
             text: 'Eliminar', 
@@ -98,7 +98,7 @@ const TreinoTecnicoDetails = () => {
         <TouchableOpacity style={styles.backButton} onPress={handleVoltar}>
           <Text style={styles.backButtonText}>Voltar para a lista</Text>
         </TouchableOpacity>
-        <Text style={styles.hintText}>Verifique sua conexão com a internet</Text>
+        <Text style={styles.hintText}>Verifique a sua conexão com a internet</Text>
       </View>
     );
   }

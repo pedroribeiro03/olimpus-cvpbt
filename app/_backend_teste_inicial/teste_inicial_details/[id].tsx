@@ -1,8 +1,23 @@
-import { View, Text, ActivityIndicator, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+// Importações corrigidas
+import { 
+  View, 
+  Text, 
+  ActivityIndicator, 
+  StyleSheet, 
+  Alert, 
+  TouchableOpacity 
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { config, getTesteById, getAccount, signOut, deleteTesteInicial, Client } from '@/lib/appwrite';
-
+import { 
+  config, 
+  getTesteById, 
+  getAccount, 
+  signOut, 
+  deleteTesteInicial,
+  databases // Adicione esta importação
+} from '@/lib/appwrite';
+import { Query } from 'react-native-appwrite'; // Importe o Query separadamente
 export default function TesteInicialDetails() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -12,72 +27,83 @@ export default function TesteInicialDetails() {
 
   // Verificação de sessão e carregamento dos dados
   useEffect(() => {
-    const initialize = async () => {
+    const loadData = async () => {
       try {
-        // 1. Verificar sessão
-        const session = await getAccount();
-        if (!session) {
-          await signOut();
-          router.replace('/(auth)/sign-in');
-          return;
-        }
-
-        // 2. Verificar se o ID existe
-        if (!id || typeof id !== 'string') {
-          throw new Error('ID do teste inválido');
-        }
-
-        // 3. Carregar dados do teste
-        console.log('Buscando teste com ID:', id); // Debug
-        const testData = await getTesteById(id);
+        console.log('Carregando dados do teste...');
         
-        if (!testData) {
-          throw new Error('Teste não encontrado no banco de dados');
+        // 1. Verificar autenticação
+        const account = await getAccount();
+        if (!account) {
+          throw new Error('Usuário não autenticado');
         }
-
-        setTeste(testData);
-      } catch (err) {
-        console.error('Erro ao carregar:', err);
-        setError(err.message);
-        Alert.alert('Erro', err.message);
-        router.back();
+  
+        // 2. Verificar se é backend user (opcional)
+        const isBackendUser = await databases.listDocuments(
+          config.databaseId,
+          config.user_backEndCollectionId,
+          [Query.equal('IDUtilizador', account.$id)]
+        );
+  
+        // 3. Carregar dados do teste
+        if (id && typeof id === 'string') {
+          const testeData = await getTesteById(id);
+          setTeste(testeData);
+        } else {
+          throw new Error('ID inválido');
+        }
+  
+      } catch (error) {
+        console.error('Erro ao carregar:', error);
+        setError(error.message);
       } finally {
         setLoading(false);
       }
     };
+    loadData();
+  }, 
+  [id]);
 
-    initialize();
-  }, [id]);
-
-  
   const handleDelete = async () => {
+    console.log('[1] Iniciando processo de deleção');
+    
     try {
-      console.log('ID do teste a ser deletado:', id);
-  
-      // Verifica se o usuário está autenticado
-      const currentAccount = await getAccount();
-      if (!currentAccount) {
-        Alert.alert('Erro', 'Faça login novamente.');
-        await signOut();
-        router.replace('/(auth)/sign-in');
+      // 1. Diálogo de confirmação simplificado
+      const userConfirmed = confirm('Tem certeza que deseja excluir este teste?');
+      console.log('[2] Usuário respondeu:', userConfirmed);
+      
+      if (!userConfirmed) {
+        console.log('[3] Operação cancelada pelo usuário');
         return;
       }
   
-      // Chama a função de deleção (já verifica permissões internamente)
-      await deleteTesteInicial(id);
+      // 2. Feedback visual
+      Alert.alert('PROCESSANDO', 'Excluindo teste...');
       
-      Alert.alert('Sucesso', 'Teste deletado!');
-      router.back(); // Volta para a tela anterior
+      // 3. Execução direta sem timeout adicional
+      console.log('[3] Executando deleção...');
+      await deleteTesteInicial(id as string);
+      
+      console.log('[4] Deleção concluída');
+      Alert.alert('SUCESSO', 'Teste excluído com sucesso!');
+      router.replace('/(tabs_backend)/testesiniciais');
+  
     } catch (error) {
-      console.error('Erro ao excluir:', error);
-      Alert.alert('Erro', error.message || 'Falha ao deletar teste');
+      console.error('[ERRO] Detalhes:', {
+        message: error.message,
+        code: error.code,
+        type: error.type
+      });
+      Alert.alert('ERRO', error.message || 'Falha ao excluir');
     }
-  };  
+  };
   // Renderização condicional
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#4CAF50" />
+        <Text style={{color: '#fff', marginTop: 10}}>
+          {!teste ? 'Carregando teste...' : 'Processando...'}
+        </Text>
       </View>
     );
   }
