@@ -8,6 +8,7 @@ export default function Layout() {
       <Tabs.Screen name="users" options={{ title: "Utilizadores" }} />
       <Tabs.Screen name="exercises" options={{ title: "Exercícios" }} />
       <Tabs.Screen name="testesiniciais" options={{ title: "Testes Iniciais" }} />
+      <Tabs.Screen name="treinos_tecnicos" options={{ title: "Treinos Técnicos" }} />
       <Tabs.Screen name="profile" options={{ title: "Perfil" }} />
     
       </Tabs>
