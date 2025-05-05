@@ -70,7 +70,7 @@ const PlanoSemanal = () => {
         style={styles.button}
         onPress={() => {
           // Redireciona para a página do plano do dia com o dia selecionado na URL
-          router.push(`../ginasio/${selectedDate}`);
+          router.push(`../ginasio/date/${selectedDate}`);
         }}
       >
         <Text style={styles.buttonText}>Ver Plano do Dia</Text>

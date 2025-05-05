@@ -2,6 +2,7 @@ import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, SafeAreaVi
 import React, { useState } from 'react';
 import { useRoute } from '@react-navigation/native';
 import { Calendar } from 'react-native-calendars';
+import { router } from 'expo-router';
 
 const UserProfile = () => {
   const route = useRoute();
@@ -29,7 +30,7 @@ const UserProfile = () => {
 
   const handleDayPress = (day: { dateString: string }) => {
     setSelectedDate(day.dateString);
-    console.log(`Você selecionou o dia: ${day.dateString}`);
+    console.log("Aqui")
   };
 
   const markedDates: { [key: string]: { selected: boolean; selectedColor: string; selectedTextColor: string; marked: boolean; dotColor?: string } } = weekDates.reduce((acc, date) => {
@@ -45,8 +46,11 @@ const UserProfile = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView>
-        <View style={styles.header}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled" // Importante!
+      >        
+      <View style={styles.header}>
           <Text style={styles.title}>Perfil de {nome ?? 'Desconhecido'}</Text>
         </View>
 
@@ -101,12 +105,22 @@ const UserProfile = () => {
           <View style={styles.selectedDayContainer}>
             <Text style={styles.selectedDayText}>Dia Selecionado: {selectedDate}</Text>
           </View>
-          <TouchableOpacity style={styles.button} onPress={() => {
-            // Aqui podes redirecionar para o plano de treino específico para o dia
-            console.log(`Plano do dia ${selectedDate}`);
-          }}>
-            <Text style={styles.buttonText}>Ver Plano do Dia</Text>
-          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={() => {
+              console.log("ID do usuário antes da navegação:", id); // Adicione para debug
+              router.push({
+                pathname: "/_backend_ginasio/profile_plan/[id]",
+                params: { 
+                  id: id, // Garante que é string
+                  selectedDate: String(selectedDate),
+                  userName: String(nome)
+                }
+              });
+            }}
+          >
+  <Text style={styles.buttonText}>Ver Plano do Dia</Text>
+        </TouchableOpacity>
         </SafeAreaView>
       </ScrollView>
     </View>
@@ -214,6 +228,11 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     color: '#fff',
+  },
+
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 20 // Espaço para o botão
   },
 });
 
