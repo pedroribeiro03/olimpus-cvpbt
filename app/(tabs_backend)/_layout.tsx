@@ -6,9 +6,10 @@ export default function Layout() {
   
       {/* Definindo as telas dentro da pilha */}
       <Tabs.Screen name="users" options={{ title: "Utilizadores" }} />
-      <Tabs.Screen name="exercises" options={{ title: "Exercícios" }} />
+      <Tabs.Screen name="manage_exercises" options={{ title: "Área Técnica" }} />
       <Tabs.Screen name="profile" options={{ title: "Perfil" }} />
     
       </Tabs>
   );
+
 }

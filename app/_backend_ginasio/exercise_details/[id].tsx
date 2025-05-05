@@ -1,121 +1,152 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DropDownPicker from 'react-native-dropdown-picker';
-import { getExerciseByIdBackend, updateExercise, getGruposMusculares, deleteExercise } from '@/lib/appwrite';
+import { updateExercise, getExerciseByIdBackend, getGruposMusculares, deleteExercise } from '@/lib/appwrite';
 
-const ExerciseDetails = () => {
+const EditExercise = () => {
   const router = useRouter();
-  const { id } = useLocalSearchParams(); // Obtém o ID do exercício da URL
+  const { id } = useLocalSearchParams<{ id: string }>();
+
   const [nome, setNome] = useState('');
   const [video, setVideo] = useState('');
   const [instrucoes, setInstrucoes] = useState('');
   const [grupoMuscular1, setGrupoMuscular1] = useState(null);
   const [grupoMuscular2, setGrupoMuscular2] = useState(null);
-  const [muscleGroups, setMuscleGroups] = useState([]);
+  const [muscleGroups, setMuscleGroups] = useState<{ label: string; value: string }[]>([]);
   const [open1, setOpen1] = useState(false);
   const [open2, setOpen2] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  // Função para carregar os dados do exercício e os grupos musculares
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Força o id a ser uma string
-        const exerciseId = String(id);
-  
-        // Busca os detalhes do exercício (para backend)
-        const exercise = await getExerciseByIdBackend(exerciseId);
-        if (exercise && exercise.length > 0) {
-          const exerciseData = exercise[0]; // Acessa o primeiro objeto do array
-  
-          // Busca os grupos musculares para o dropdown
-          const groups = await getGruposMusculares();
-          setMuscleGroups(groups);
-  
-          // Define os valores dos dropdowns APÓS carregar os grupos musculares
-          setNome(exerciseData.nome);
-          setVideo(exerciseData.video);
-          setInstrucoes(exerciseData.instrucoes);
-          setGrupoMuscular1(exerciseData.grupoMuscular1);
-          setGrupoMuscular2(exerciseData.grupoMuscular2);
+        const [grupos, exercicioData] = await Promise.all([
+          getGruposMusculares(),
+          getExerciseByIdBackend(id)
+        ]);
+
+        setMuscleGroups(grupos);
+
+        if (exercicioData) {
+            const ex = exercicioData[0]
+          setNome(ex.nome || '');
+          setVideo(ex.video || '');
+          setInstrucoes(ex.instrucoes || '');
+          setGrupoMuscular1(ex.grupoMuscular1 || null);
+          setGrupoMuscular2(ex.grupoMuscular2 || null);
         } else {
           Alert.alert('Erro', 'Exercício não encontrado.');
+          router.back();
         }
       } catch (error) {
         Alert.alert('Erro', 'Não foi possível carregar os dados do exercício.');
-        console.error(error);
+        console.error('Erro ao carregar:', error);
+        router.back();
       } finally {
         setLoading(false);
       }
     };
-  
-    fetchData();
+
+    if (id) {
+      fetchData();
+    }
   }, [id]);
 
-  // Função para atualizar o exercício
   const handleUpdateExercise = async () => {
-    if (!nome || !video || !instrucoes || !grupoMuscular1 || !grupoMuscular2) {
-      Alert.alert('Erro', 'Preencha todos os campos.');
+    if (!nome || !video || !instrucoes || !grupoMuscular1) {
+      Alert.alert('Erro', 'Preencha todos os campos obrigatórios (Grupo Muscular 2 é opcional).');
       return;
     }
 
+    setIsUpdating(true);
     try {
       await updateExercise(id, nome, video, instrucoes, grupoMuscular1, grupoMuscular2);
       Alert.alert('Sucesso', 'Exercício atualizado com sucesso!');
-      router.back(); // Volta para a tela anterior
+      router.replace('/_backend_ginasio/exercises');
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível atualizar o exercício.');
-      console.error(error);
+      console.error('Erro na atualização:', error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteExercise = () => {
+    Alert.alert(
+      'Confirmar remoção',
+      'Tens a certeza que queres apagar este exercício?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Apagar',
+          style: 'destructive',
+          onPress: () => confirmDelete(),
+        },
+      ]
+    );
+  };
+
+  const confirmDelete = async () => {
+    setIsDeleting(true);
     try {
-      await deleteExercise(id as string); // Apaga o exercício
-      Alert.alert('Exercício apagado', 'O exercício foi removido com sucesso.');
-      router.push('/(tabs_backend)/exercises'); // Redireciona para a lista de exercícios
+      const result = await deleteExercise(id);
+      if (result) {
+        Alert.alert('Sucesso', 'Exercício apagado com sucesso!');
+        router.replace('/_backend_ginasio/exercises');
+      } else {
+        throw new Error('Falha ao apagar');
+      }
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível apagar o exercício.');
+      console.error('Erro ao apagar:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ccc" />
+        <ActivityIndicator size="large" color="#4CAF50" />
+        <Text style={styles.loadingText}>A carregar exercício...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Nome do Exercício</Text>
+      <Text style={styles.label}>Nome do Exercício*</Text>
       <TextInput
         style={styles.input}
         value={nome}
         onChangeText={setNome}
         placeholder="Digite o nome do exercício"
+        placeholderTextColor="#999"
       />
 
-      <Text style={styles.label}>Link do Vídeo</Text>
+      <Text style={styles.label}>Link do Vídeo*</Text>
       <TextInput
         style={styles.input}
         value={video}
         onChangeText={setVideo}
         placeholder="Digite o link do vídeo"
+        placeholderTextColor="#999"
       />
 
-      <Text style={styles.label}>Instruções</Text>
+      <Text style={styles.label}>Instruções*</Text>
       <TextInput
-        style={[styles.input, { height: 80 }]}
+        style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
         value={instrucoes}
         onChangeText={setInstrucoes}
         placeholder="Digite as instruções"
+        placeholderTextColor="#999"
         multiline
       />
 
-      <Text style={styles.label}>Grupo Muscular 1</Text>
+      <Text style={styles.label}>Grupo Muscular 1*</Text>
       <DropDownPicker
         open={open1}
         value={grupoMuscular1}
@@ -123,9 +154,10 @@ const ExerciseDetails = () => {
         setOpen={setOpen1}
         setValue={setGrupoMuscular1}
         placeholder="Selecione um grupo muscular"
+        placeholderStyle={{ color: '#999' }}
         style={styles.dropdown}
         zIndex={3000}
-        dropDownContainerStyle={{ zIndex: 3000 }}
+        dropDownContainerStyle={styles.dropdownContainer}
       />
 
       <Text style={styles.label}>Grupo Muscular 2</Text>
@@ -135,24 +167,37 @@ const ExerciseDetails = () => {
         items={muscleGroups}
         setOpen={setOpen2}
         setValue={setGrupoMuscular2}
-        placeholder="Selecione um grupo muscular"
+        placeholder="Opcional"
+        placeholderStyle={{ color: '#999' }}
         style={styles.dropdown}
         zIndex={2000}
-        dropDownContainerStyle={{ zIndex: 2000 }}
+        dropDownContainerStyle={styles.dropdownContainer}
       />
 
-        <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.editButton]}>
-            <Text style={styles.buttonText}>Atualizar Exercício</Text>
-            </TouchableOpacity>
+      <TouchableOpacity 
+        style={[styles.button, isUpdating && styles.disabledButton]} 
+        onPress={handleUpdateExercise}
+        disabled={isUpdating}
+      >
+        {isUpdating ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Atualizar Exercício</Text>
+        )}
+      </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={handleDelete}>
-            <Text style={styles.buttonText}>Apagar Exercício</Text>
-            </TouchableOpacity>
-        </View>
+      <TouchableOpacity 
+        style={[styles.deleteButton, isDeleting && styles.disabledButton]} 
+        onPress={handleDeleteExercise}
+        disabled={isDeleting}
+      >
+        {isDeleting ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Apagar Exercício</Text>
+        )}
+      </TouchableOpacity>
     </View>
-        
- 
   );
 };
 
@@ -165,35 +210,52 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     color: '#fff',
-    marginBottom: 5,
+    marginBottom: 8,
+    fontWeight: '500',
   },
   input: {
-    backgroundColor: '#fff',
-    color: '#000',
+    backgroundColor: '#333',
+    color: '#fff',
     padding: 12,
     borderRadius: 8,
-    marginBottom: 15,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#444',
+    fontSize: 16,
   },
   dropdown: {
-    backgroundColor: '#fff',
-    borderColor: '#ccc',
+    backgroundColor: '#333',
+    borderColor: '#444',
     borderRadius: 8,
-    marginBottom: 15,
+    marginBottom: 16,
+    minHeight: 48,
+  },
+  dropdownContainer: {
+    backgroundColor: '#333',
+    borderColor: '#444',
+    zIndex: 1000,
   },
   button: {
-    flex: 1, // Faz com que ambos tenham o mesmo tamanho
-    paddingVertical: 15,
+    backgroundColor: '#4CAF50',
+    padding: 16,
     borderRadius: 8,
     alignItems: 'center',
-    marginHorizontal: 5, // Dá um pequeno espaço entre os botões
+    marginTop: 20,
+    justifyContent: 'center',
+    height: 50,
   },
-
-  editButton: {
-    backgroundColor: '#28A745', // Verde
+  deleteButton: {
+    backgroundColor: '#ff4444',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 12,
+    justifyContent: 'center',
+    height: 50,
   },
-
+  disabledButton: {
+    opacity: 0.7,
+  },
   buttonText: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -204,17 +266,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#1a1a1a',
+    gap: 16,
   },
-
-  deleteButton: {
-    backgroundColor: '#DC3545', // Vermelho
-  },
-
-
-   buttonContainer: {
-    flexDirection: 'row',
-    gap: 15, // Adiciona espaço entre os botões
+  loadingText: {
+    fontSize: 18,
+    color: '#fff',
   },
 });
 
-export default ExerciseDetails;
+export default EditExercise;

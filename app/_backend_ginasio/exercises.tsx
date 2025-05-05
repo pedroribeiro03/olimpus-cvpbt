@@ -75,7 +75,7 @@ const Exercises = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Lista de Exercícios (Página {page})</Text>
+      <Text style={styles.title}>Lista de Exercícios </Text>
 
       {/* Botão de Criar Exercício */}
       <TouchableOpacity
