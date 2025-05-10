@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
-import { SafeAreaView, Text, TouchableOpacity, StyleSheet, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { SafeAreaView, Text, TouchableOpacity, StyleSheet, View, Alert } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { useRouter } from 'expo-router';
+import { getCurrentUser } from '@/lib/appwrite';
+import { generateTrainingPlan } from '@/lib/appwrite';
+
 
 const PlanoSemanal = () => {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [userId, setUserId] = useState<string | null>(null);  // Armazenando o ID do usuário
 
   // Função para obter o formato da data (YYYY-MM-DD) da semana atual
   const getWeekDates = () => {
@@ -23,17 +27,33 @@ const PlanoSemanal = () => {
     return weekDates;
   };
 
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        if (currentUser) {
+          setUserId(currentUser.IDUtilizador); // Defina o ID do usuário logado
+        } else {
+          console.log("Usuário não encontrado.");
+        }
+      } catch (error) {
+        console.error("Erro ao obter usuário:", error);
+      }
+    };
+
+    fetchUserId();
+  }, []);  // O useEffect será executado quando o componente for montado
+
   const weekDates = getWeekDates();
   const today = new Date().toISOString().split('T')[0];
 
   const handleDayPress = (day: { dateString: string }) => {
     setSelectedDate(day.dateString);
-    // Aqui você pode adicionar lógica para carregar o plano de treino ou outra lógica
     console.log(`Você selecionou o dia: ${day.dateString}`);
   };
 
   const markedDates: { [key: string]: { selected: boolean; selectedColor: string; selectedTextColor: string; marked: boolean; dotColor?: string } } = 
-  weekDates.reduce<{ [key: string]: { selected: boolean; selectedColor: string; selectedTextColor: string; marked: boolean; dotColor?: string } }>(
+  weekDates.reduce<{ [key: string]: { selected: boolean; selectedColor: string; selectedTextColor: string; marked: boolean; dotColor?: string } }>( 
     (acc, date) => {
       acc[date] = {
         selected: date === selectedDate,
@@ -47,6 +67,22 @@ const PlanoSemanal = () => {
     {} // Iniciando o acumulador como um objeto vazio
   );
 
+  // Função para gerar o plano de treino
+  const handleGenerateTrainingPlan = async () => {
+    try {
+      if (!userId) {
+        Alert.alert("Erro", "Usuário não encontrado.");
+        return;
+      }
+
+      // Agora, podemos gerar o plano de treino
+      await generateTrainingPlan(userId);  // Chama a função de geração do plano de treino do appwrite.js
+      Alert.alert('Plano de treino gerado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar plano de treino:', error);
+      Alert.alert('Erro', 'Não foi possível gerar o plano de treino.');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -65,19 +101,25 @@ const PlanoSemanal = () => {
         <Text style={styles.selectedDayText}>Dia Selecionado: {selectedDate}</Text>
       </View>
 
-      {/* Aqui você pode adicionar mais lógica, como carregar o plano do dia selecionado */}
+      {/* Botão para visualizar o plano do dia */}
       <TouchableOpacity
         style={styles.button}
         onPress={() => {
-          // Redireciona para a página do plano do dia com o dia selecionado na URL
           router.push(`../ginasio/date/${selectedDate}`);
         }}
       >
         <Text style={styles.buttonText}>Ver Plano do Dia</Text>
       </TouchableOpacity>
+
+      {/* Botão para gerar plano de treino */}
+      <TouchableOpacity style={styles.button} onPress={handleGenerateTrainingPlan}>
+        <Text style={styles.buttonText}>Gerar Plano de Treino</Text>
+      </TouchableOpacity>
+
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -108,7 +150,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     alignItems: 'center',
     width: '80%',
-    alignSelf: 'center'
+    alignSelf: 'center',
   },
   buttonText: {
     color: '#fff',

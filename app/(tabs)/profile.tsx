@@ -1,19 +1,69 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView } from 'react-native';
-import React from 'react';
+import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import { useGlobalContext } from '@/context/GlobalProvider';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { signOut } from '@/lib/appwrite';
+import { signOut, uploadImage } from '@/lib/appwrite'; // Importando a função uploadImage do appwrite.js
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-
 
 const Profile = () => {
   const { user, setUser, setIsLogged, loading } = useGlobalContext();
+  const [image, setImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.fotografia) {
+      setImage(user.fotografia);
+    } else {
+      setImage(null);
+    }
+  }, [user]);
 
   const logout = async () => {
-    await signOut();
-    setUser(null);
-    setIsLogged(false);
-    router.replace('/sign-in');
+    try {
+      await signOut(); // Função de logout do appwrite.js
+      setUser(null);
+      setIsLogged(false);
+      router.replace('/sign-in');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      Alert.alert('Erro', 'Não foi possível terminar sessão.');
+    }
+  };
+
+  const pickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permissão necessária", "É necessária permissão para aceder às imagens.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      setImage(uri);
+      await uploadImageToAppwrite(uri); // Função para fazer o upload da imagem
+    }
+  };
+
+  const uploadImageToAppwrite = async (uri: string) => {
+    if (!user?.$id) {
+      Alert.alert("Erro", "Usuário não encontrado.");
+      return;
+    }
+
+    try {
+      const imageUrl = await uploadImage(uri, user.$id); // Função de upload no appwrite.js
+      setImage(imageUrl);
+    } catch (error) {
+      console.error("Erro ao fazer upload da imagem:", error);
+      Alert.alert("Erro", "Erro ao fazer upload da imagem.");
+    }
   };
 
   if (loading) {
@@ -35,17 +85,18 @@ const Profile = () => {
           {/* Foto de Perfil */}
           <View style={styles.profilePicContainer}>
             <Image
-              source={user?.fotografia ? { uri: user.fotografia } : require('../../assets/images/default-profile.jpg')}
+              key={image}
+              source={image ? { uri: image } : require('../../assets/images/default-profile.jpg')}
               style={styles.profilePic}
             />
-            <TouchableOpacity style={styles.changePicButton}>
+            <TouchableOpacity style={styles.changePicButton} onPress={pickImage}>
               <Text style={styles.changePicText}>Alterar Foto</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Detalhes do Perfil */}
           <View style={styles.profileInfoSection}>
             <Text style={styles.profileTitle}>Detalhes do Perfil</Text>
+
             <View style={styles.profileInfoRow}>
               <Text style={styles.profileLabel}>Nome</Text>
               <Text style={styles.profileValue}>{user?.nome || 'Não disponível'}</Text>
@@ -71,7 +122,6 @@ const Profile = () => {
               <Text style={styles.profileValue}>{user?.peso || 'Não disponível'} kg</Text>
             </View>
           </View>
-
           {/* Botão de Logout */}
           <TouchableOpacity style={styles.logoutButton} onPress={logout}>
             <Text style={styles.logoutButtonText}>Logout</Text>
