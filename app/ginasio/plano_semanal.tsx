@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, Text, TouchableOpacity, StyleSheet, View, Alert } from 'react-native';
+import { SafeAreaView, Text, TouchableOpacity, StyleSheet, View, Alert, ActivityIndicator } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { useRouter } from 'expo-router';
 import { getCurrentUser } from '@/lib/appwrite';
 import { generateTrainingPlan } from '@/lib/appwrite';
 
-
 const PlanoSemanal = () => {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [userId, setUserId] = useState<string | null>(null);  // Armazenando o ID do usuário
+  const [loading, setLoading] = useState(false);  // Estado de carregamento
 
   // Função para obter o formato da data (YYYY-MM-DD) da semana atual
   const getWeekDates = () => {
@@ -75,11 +75,16 @@ const PlanoSemanal = () => {
         return;
       }
 
+      setLoading(true);  // Inicia o carregamento
+
       // Agora, podemos gerar o plano de treino
       await generateTrainingPlan(userId);  // Chama a função de geração do plano de treino do appwrite.js
+
+      setLoading(false);  // Finaliza o carregamento
       Alert.alert('Plano de treino gerado com sucesso!');
     } catch (error) {
       console.error('Erro ao gerar plano de treino:', error);
+      setLoading(false);  // Finaliza o carregamento
       Alert.alert('Erro', 'Não foi possível gerar o plano de treino.');
     }
   };
@@ -87,6 +92,14 @@ const PlanoSemanal = () => {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.header}>Plano Semanal</Text>
+
+      {/* Mostrar a mensagem de carregamento se estiver carregando */}
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>A carregar plano...</Text>
+        </View>
+      )}
 
       <Calendar
         markedDates={markedDates}
@@ -119,7 +132,6 @@ const PlanoSemanal = () => {
     </SafeAreaView>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -155,6 +167,27 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
+  },
+loadingContainer: {
+  position: 'absolute',
+  top: '50%',    // Coloca a sobreposição no meio da tela verticalmente
+  left: '50%',   // Coloca a sobreposição no meio da tela horizontalmente
+  transform: [{ translateX: -100 }, { translateY: -100 }], // Ajusta para o centro
+  alignItems: 'center',  // Alinha o conteúdo no centro horizontalmente
+  justifyContent: 'center', // Alinha o conteúdo no centro verticalmente
+  backgroundColor: 'rgba(0,0,0,0.7)',  // Cor de fundo com opacidade
+  padding: 20,
+  borderRadius: 10,
+  width: '80%',  // Controla a largura
+  height: '30%',  // Controla a altura
+  zIndex: 1,  // Garante que fique acima de outros elementos
+},
+
+
+  loadingText: {
+    color: '#fff',
+    marginTop: 10,
+    fontSize: 18,
   },
 });
 
