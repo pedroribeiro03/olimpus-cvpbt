@@ -27,6 +27,7 @@
     "expo-constants": "~17.0.8",
     "expo-font": "~13.0.1",
     "expo-haptics": "~14.0.0",
+    "expo-image-picker": "~16.0.6",
     "expo-linking": "~7.0.3",
     "expo-router": "^4.0.18",
     "expo-splash-screen": "~0.29.16",
@@ -42,6 +43,7 @@
     "react-native": "0.76.7",
     "react-native-appwrite": "^0.5.0",
     "react-native-calendars": "^1.1307.0",
+    "react-native-collapsible": "^1.6.2",
     "react-native-dropdown-picker": "^5.4.6",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-image-picker": "^7.2.3",
@@ -51,8 +53,7 @@
     "react-native-url-polyfill": "^2.0.0",
     "react-native-web": "~0.19.13",
     "react-native-webview": "13.12.5",
-    "react-native-youtube": "^2.0.2",
-    "expo-image-picker": "~16.0.6"
+    "react-native-youtube": "^2.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
