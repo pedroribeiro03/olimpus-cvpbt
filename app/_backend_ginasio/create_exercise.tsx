@@ -42,7 +42,7 @@ const CreateExercise = () => {
     try {
       await createExercise(nome, video, instrucoes, grupoMuscular1, grupoMuscular2);
       Alert.alert('Sucesso', 'Exercício criado com sucesso!');
-      router.replace('/(tabs_backend)/exercises'); // Navega de volta e recarrega os dados
+      router.replace('/_backend_ginasio/exercises'); // Navega de volta e recarrega os dados
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível criar o exercício.');
       console.error(error);

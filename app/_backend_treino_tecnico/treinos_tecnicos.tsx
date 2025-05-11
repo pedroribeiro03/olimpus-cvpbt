@@ -1,13 +1,13 @@
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { getAllTreinosTecnicos } from '@/lib/appwrite';
+import { getAllExerciciosTecnicos } from '@/lib/appwrite';
 
 type TreinoTecnico = {
   $id: string;
   nome: string;
   video: string;
-  sequencia: string;
+  instrucoes: string;
 };
 
 const TreinosTecnicos = () => {
@@ -21,7 +21,7 @@ const TreinosTecnicos = () => {
     try {
       setLoading(true);
       const offset = (page - 1) * limit;
-      const response = await getAllTreinosTecnicos(limit, offset);
+      const response = await getAllExerciciosTecnicos(limit, offset);
       
       if (!response || !response.documents) {
         throw new Error('Resposta da API inválida');
@@ -31,7 +31,7 @@ const TreinosTecnicos = () => {
         $id: doc.$id,
         nome: doc.nome || 'Treino sem nome',
         video: doc.video || '',
-        sequencia: doc.sequencia || ''
+        instrucoes: doc.instrucoes || ''
       })));
 
     } catch (error) {
@@ -46,12 +46,12 @@ const TreinosTecnicos = () => {
   }, [page]);
 
   const handleCreate = () => {
-    router.push('/_backend_treino_tecnico/create_treinotecnico');
+    router.push('/_backend_treino_tecnico/create_exerciciotecnico');
   };
 
   const handleDetails = (id: string) => {
     router.push({
-      pathname: '/_backend_treino_tecnico/[id]',
+      pathname: '/_backend_treino_tecnico/exercise_details/[id]',
       params: { id }
     });
   };
@@ -84,7 +84,6 @@ const TreinosTecnicos = () => {
             onPress={() => handleDetails(item.$id)}
           >
             <Text style={styles.testName}>{item.nome}</Text>  {/* Alterado para testName */}
-            <Text style={styles.testType}>Sequência: {item.sequencia.substring(0, 50)}...</Text>  {/* Alterado para testType */}
           </TouchableOpacity>
         )}
       />

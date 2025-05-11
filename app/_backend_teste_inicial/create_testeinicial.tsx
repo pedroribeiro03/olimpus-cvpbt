@@ -53,11 +53,9 @@ const CreateTesteInicial = () => {
 
     setSubmitting(true);
     try {
-      await createTesteInicial({nome,instrucoes, //tipoTesteId: tipoTeste,
-       // exercicioGinasioId: exercicioId
-      });
+      await createTesteInicial({nome,instrucoes, tipoTesteId: tipoTeste, exercicioGinasioId: exercicioId});
       Alert.alert('Sucesso', 'Teste criado com sucesso!');
-      router.replace('/(tabs_backend)/testesiniciais');
+      router.replace('/_backend_teste_inicial/testesiniciais');
     } catch (error) {
       Alert.alert('Erro', 'Falha ao criar teste');
       console.error(error);

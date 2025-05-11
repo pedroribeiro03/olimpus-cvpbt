@@ -1,5 +1,6 @@
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'expo-router';
 import { getTestesCampo } from '@/lib/appwrite';
 
 interface Teste {
@@ -10,6 +11,7 @@ interface Teste {
 const HomeTestesCampo = () => {
   const [testes, setTestes] = useState<Teste[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const carregarTestes = async () => {
@@ -51,7 +53,12 @@ const HomeTestesCampo = () => {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.testCard}
-            onPress={() => console.log('Teste selecionado:', item)}
+        onPress={() =>
+          router.push({
+            pathname: '/ginasio/registo_resultado_teste/[id]',
+            params: { id: item.$id },
+          })
+        }
           >
             <Text style={styles.testName}>{item.nome}</Text>
           </TouchableOpacity>

@@ -1,44 +1,54 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, Text, FlatList, StyleSheet, View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { getExercisesForDate } from '@/lib/appwrite';
+import { getExercisesForDate, getTechnicalExercisesForDate } from '@/lib/appwrite';
+import { ScrollView } from 'react-native-gesture-handler';
 
-// Definimos o tipo para cada exercício
-type Exercise = {
-  nome: string; // Nome do exercício
-  series: number; // Número de séries
-  reps: number;  // Número de repetições
+// Tipo para exercícios de ginásio
+type GymExercise = {
+  nome: string;
+  series: number;
+  reps: number;
+  idExercicio: string;
+};
+
+// Tipo para exercícios técnicos
+type TechExercise = {
+  nome: string;
   idExercicio: string;
 };
 
 const PlanoDia = () => {
-  const { date } = useLocalSearchParams(); // Captura o parâmetro da URL
-  const [exercises, setExercises] = useState<Exercise[]>([]); // Estado tipado
-  const [error, setError] = useState<string | null>(null); // Estado para erros
-  const [loading, setLoading] = useState<boolean>(true); // Estado de loading
+  const { date } = useLocalSearchParams<{ date: string }>();
+  const [gymExercises, setGymExercises] = useState<GymExercise[]>([]);
+  const [techExercises, setTechExercises] = useState<TechExercise[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    console.log("Parâmetro date recebido:", date); // Debug
     if (!date) {
-      setError("Data inválida. Tente novamente.");
-      setLoading(false); // Para o loading ao detectar erro
+      setError('Data inválida. Tente novamente.');
+      setLoading(false);
       return;
     }
 
-    const fetchExercises = async () => {
-      setLoading(true); // Ativa o loading
+    const fetchPlans = async () => {
+      setLoading(true);
       try {
-        const data: Exercise[] = await getExercisesForDate(date as string); // Chama a função e tipa o retorno
-        setExercises(data); // Atualiza o estado com a lista de exercícios
+        const gymData = await getExercisesForDate(date);
+        setGymExercises(gymData);
+
+        const techData = await getTechnicalExercisesForDate(date);
+        setTechExercises(techData);
       } catch (err: any) {
-        console.error("Erro ao buscar exercícios:", err.message);
-        setError("Erro ao carregar os exercícios. Tente novamente.");
+        console.error('Erro ao buscar planos do dia:', err.message);
+        setError('Erro ao carregar os planos.');
       } finally {
-        setLoading(false); // Desativa o loading
+        setLoading(false);
       }
     };
 
-    fetchExercises();
+    fetchPlans();
   }, [date]);
 
   if (loading) {
@@ -60,31 +70,53 @@ const PlanoDia = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <ScrollView>
       <Text style={styles.header}>Plano do Dia</Text>
       <Text style={styles.subHeader}>Data: {date}</Text>
 
-      {exercises.length > 0 ? (
+      {/* Seção Treino de Ginásio */}
+      <Text style={styles.sectionTitle}>Treino de Ginásio</Text>
+      {gymExercises.length > 0 ? (
         <FlatList
-          data={exercises}
-          keyExtractor={(item, index) => index.toString()}
+          data={gymExercises}
+          keyExtractor={(item) => item.idExercicio}
           renderItem={({ item }) => (
             <View style={styles.exerciseCard}>
-              <TouchableOpacity onPress={() => {
-                // Redireciona para a página do exercício com o ID selecionado
-                router.push(`/ginasio/exercicio/${item.idExercicio}`);
-              }}>
+              <TouchableOpacity onPress={() => router.push(`/ginasio/exercicio/${item.idExercicio}`)}>
                 <Text style={styles.exerciseName}>{item.nome}</Text>
                 <Text style={styles.exerciseDetails}>
-                  Séries: {item.series} | Reps: {item.reps} 
+                  Séries: {item.series} | Reps: {item.reps}
                 </Text>
               </TouchableOpacity>
             </View>
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          style={styles.list}
         />
       ) : (
-        <Text style={styles.noDataText}>Nenhum exercício encontrado para esta data.</Text>
+        <Text style={styles.noDataText}>Nenhum exercício de ginásio para esta data.</Text>
       )}
+
+      {/* Seção Treino Técnico */}
+      <Text style={styles.sectionTitle}>Treino Técnico</Text>
+      {techExercises.length > 0 ? (
+        <FlatList
+          data={techExercises}
+          keyExtractor={(item) => item.idExercicio}
+          renderItem={({ item }) => (
+            <View style={styles.exerciseCard}>
+              <TouchableOpacity onPress={() => router.push(`/ginasio/exerciciotecnico/${item.idExercicio}`)}>
+                <Text style={styles.exerciseName}>{item.nome}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          style={styles.list}
+        />
+      ) : (
+        <Text style={styles.noDataText}>Nenhum exercício técnico para esta data.</Text>
+      )}
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -93,7 +125,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#1E1E1E', // Fundo cinza escuro para um visual moderno
+    backgroundColor: '#1E1E1E',
   },
   center: {
     flex: 1,
@@ -103,19 +135,29 @@ const styles = StyleSheet.create({
   },
   header: {
     fontSize: 28,
-    color: '#4CAF50', // Verde para destaque
+    color: '#4CAF50',
     fontWeight: 'bold',
     textAlign: 'center',
   },
   subHeader: {
     fontSize: 18,
-    color: '#AAA', // Cinza claro para contraste
+    color: '#AAA',
     textAlign: 'center',
     marginBottom: 20,
   },
+  sectionTitle: {
+    fontSize: 22,
+    color: '#FFF',
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  list: {
+    marginBottom: 16,
+  },
   exerciseCard: {
     padding: 15,
-    backgroundColor: '#2C2C2C', // Fundo cinza escuro para os cards
+    backgroundColor: '#2C2C2C',
     borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -125,22 +167,22 @@ const styles = StyleSheet.create({
   },
   exerciseName: {
     fontSize: 20,
-    color: '#FFF', // Branco para destaque
+    color: '#FFF',
     fontWeight: 'bold',
     marginBottom: 5,
   },
   exerciseDetails: {
     fontSize: 16,
-    color: '#CCC', // Cinza claro para detalhes
+    color: '#CCC',
   },
   separator: {
-    height: 10, // Espaço entre os cards
+    height: 10,
   },
   noDataText: {
     fontSize: 16,
     color: '#AAA',
     textAlign: 'center',
-    marginTop: 20,
+    marginBottom: 8,
   },
   errorText: {
     fontSize: 16,

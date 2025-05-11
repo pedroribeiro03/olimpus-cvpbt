@@ -1,8 +1,7 @@
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { getAllTestesIniciais } from '@/lib/appwrite';
-import { config } from '@/lib/appwrite';
+import { getAllTestesIniciais, getTiposAptidao } from '@/lib/appwrite';
 
 type Teste = {
   $id: string;
@@ -18,22 +17,39 @@ const TestesIniciais = () => {
   const limit = 25;
 
   const fetchTestes = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const offset = (page - 1) * limit;
       const response = await getAllTestesIniciais(limit, offset);
-      
-      // Verificação segura da resposta
-      if (!response || !response.documents) {
+
+      if (!response?.documents) {
         throw new Error('Resposta da API inválida');
       }
 
-      setTestes(response.documents.map(doc => ({
-        $id: doc.$id,
-        nome: doc.nome || 'Teste sem nome',
-        tipoTeste: doc.tipoTeste === config.aptidaoCollectionId ? 'Ginásio' : 'Campo'
-      })));
+      const docs = response.documents;
+      const testesComTipo: Teste[] = [];
 
+      for (const doc of docs) {
+        // Extrair o ID mesmo que tipoTeste venha como objeto
+        const tipoId = typeof doc.tipoTeste === 'object' && doc.tipoTeste !== null
+          ? (doc.tipoTeste as any).$id
+          : String(doc.tipoTeste);
+
+        let nomeTipo = 'Tipo desconhecido';
+        try {
+          nomeTipo = await getTiposAptidao(tipoId);
+        } catch (e) {
+          console.error('Erro ao obter nome do tipo de aptidão para', tipoId, e);
+        }
+
+        testesComTipo.push({
+          $id: doc.$id,
+          nome: doc.nome || 'Teste sem nome',
+          tipoTeste: nomeTipo,
+        });
+      }
+
+      setTestes(testesComTipo);
     } catch (error) {
       console.error('Erro ao obter testes:', error);
     } finally {
@@ -48,12 +64,14 @@ const TestesIniciais = () => {
   const handleCreate = () => {
     router.push('/_backend_teste_inicial/create_testeinicial');
   };
+
   const handleDetails = (id: string) => {
     router.push({
       pathname: '/_backend_teste_inicial/teste_inicial_details/[id]',
-      params: { id }
+      params: { id },
     });
   };
+
   const handleNextPage = () => setPage(p => p + 1);
   const handlePrevPage = () => setPage(p => Math.max(p - 1, 1));
 
@@ -79,7 +97,7 @@ const TestesIniciais = () => {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.testCard}
-            onPress={() => handleDetails(item.$id)} // Use handleDetails aqui
+            onPress={() => handleDetails(item.$id)}
           >
             <Text style={styles.testName}>{item.nome}</Text>
             <Text style={styles.testType}>Tipo: {item.tipoTeste}</Text>
@@ -95,16 +113,14 @@ const TestesIniciais = () => {
         >
           <Text style={styles.paginationButtonText}>Anterior</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.paginationButton}
-          onPress={handleNextPage}
-        >
+        <TouchableOpacity style={styles.paginationButton} onPress={handleNextPage}>
           <Text style={styles.paginationButtonText}>Próximo</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -123,25 +139,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 20,
     textAlign: 'center',
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#2a2a2a',
-  },
-  tabButton: {
-    flex: 1,
-    padding: 15,
-    alignItems: 'center',
-  },
-  activeTab: {
-    backgroundColor: '#4CAF50',
-  },
-  tabText: {
-    color: '#fff',
-    fontWeight: '600',
   },
   createButton: {
     backgroundColor: '#4CAF50',
@@ -191,22 +188,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
-  },
-  errorText: {
-    color: '#ff4444',
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  retryButton: {
-    backgroundColor: '#4CAF50',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  retryButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
   },
 });
 
